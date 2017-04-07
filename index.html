@@ -4,5 +4,19 @@
     </head>
     <body>
         <script src="/socket.io/socket.io.js"></script>
+        <script>
+            var socket = io.connect();
+            socket.on('connected', function(id) {
+                console.log("Socket id", id)
+            })
+
+            socket.on('rescue', function(msg) {
+                console.log(msg)
+            })
+
+            socket.on('msgGroup', function(msg) {
+                console.log(msg);
+            })
+        </script>
     </body>
 </html>
