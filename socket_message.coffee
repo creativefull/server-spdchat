@@ -46,10 +46,28 @@ Socket = (io, db) ->
 
         # Send Direct Message
         socket.on 'directMsg', (data) -> 
-            msg = [{
+            msg = {
                 receiver : data.receiver,
                 sender : data.sender,
+                author : [data.receiver, data.sender],
                 msg : data.msg,
-                created_at : data.date
-            }]
+                time : new Date()
+            }
+            MsgModel.insert msg, (err, results) ->
+                if err
+                    throw err
+                io.emit 'directMsg', {status : 200, data : msg}
+        socket.on 'getDirectMsg', (data) ->
+            condition = {
+                author : {
+                    $in : [data.user]
+                }
+            }
+            console.log condition
+            MsgModel.find condition
+                .toArray (err, results) ->
+                    if (err)
+                        throw err
+                    socket.emit 'getDirectMsg', results
+
 module.exports = Socket;
