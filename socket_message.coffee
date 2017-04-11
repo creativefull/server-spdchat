@@ -57,6 +57,7 @@ Socket = (io, db) ->
                 if err
                     throw err
                 io.emit 'directMsg', {status : 200, data : msg}
+        # Get Direct Message
         socket.on 'getDirectMsg', (data) ->
             condition = {
                 author : {
