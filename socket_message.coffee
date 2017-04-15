@@ -40,12 +40,33 @@ Socket = (io, db) ->
                 if err
                     throw err
                 if user
-                    socket.emit 'login', {status : 200, msg : 'Login Successfull'}
+                    socket.emit 'login', {status : 200, msg : 'Login Successfull' , data : user
+                    }
                 else
                     socket.emit 'login', {status : 403, msg : 'Username / Password Not Valid'}
 
+        # Get List Chat
+        socket.on 'listChat', (data) ->
+            query1 = {
+                _id : data._id
+            }
+            UserModel.findOne query1, (err, results) ->
+                    if (err)
+                        throw err
+                    query2 = {
+                        _id : {
+                            $in : results.chat
+                        }
+                    }
+                    UserModel.find query2
+                        .toArray (err, hasil) ->
+                            if (err)
+                                throw err
+                            io.emit 'listChat', hasil
+
         # Send Direct Message
         socket.on 'directMsg', (data) -> 
+            console.log data
             msg = {
                 receiver : data.receiver,
                 sender : data.sender,
@@ -60,15 +81,32 @@ Socket = (io, db) ->
         # Get Direct Message
         socket.on 'getDirectMsg', (data) ->
             condition = {
-                author : {
-                    $in : [data.user]
-                }
+                $or : [{
+                    sender : data.sender,
+                    receiver : data.receiver
+                },{
+                    sender : data.receiver,
+                    receiver : data.sender
+                }]
             }
-            console.log condition
             MsgModel.find condition
+                .sort({ time : -1 })
                 .toArray (err, results) ->
                     if (err)
                         throw err
-                    socket.emit 'getDirectMsg', results
+                    io.emit 'getDirectMsg', results
+
+        # Get List Contact
+        socket.on 'listContact', (data) ->
+            query = {
+                _id : {
+                    $in : data
+                }
+            }
+            UserModel.find query
+                .toArray (err, resutls) ->
+                    if (err)
+                        throw err
+                    io.emit 'listContact', results
 
 module.exports = Socket;
