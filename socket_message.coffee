@@ -98,9 +98,13 @@ Socket = (io, db) ->
 
         # Get List Contact
         socket.on 'listContact', (data) ->
-            query = {}
+            query = {
+                _id : {
+                    $ne : data._id
+                }
+            }
             UserModel.find query
-                .toArray (err, resutls) ->
+                .toArray (err, results) ->
                     if (err)
                         throw err
                     io.emit 'listContact', results
