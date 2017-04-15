@@ -98,11 +98,7 @@ Socket = (io, db) ->
 
         # Get List Contact
         socket.on 'listContact', (data) ->
-            query = {
-                _id : {
-                    $in : data
-                }
-            }
+            query = {}
             UserModel.find query
                 .toArray (err, resutls) ->
                     if (err)
