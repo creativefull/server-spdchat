@@ -42,6 +42,7 @@ Socket = (io, db) ->
 
         # Login User
         socket.on 'login', (data) ->
+            console.log data
             UserModel.findOne {_id : data.username, password : data.password}, (err, user) ->
                 if err
                     throw err
@@ -62,7 +63,7 @@ Socket = (io, db) ->
                 if (results != null)
                     query2 = {
                         _id : {
-                            $in : results.chat
+                            $in : if results.chat then results.chat else []
                         }
                     }
                     UserModel.find query2
