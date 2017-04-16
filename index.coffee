@@ -14,5 +14,5 @@ MongoClient.connect "mongodb://" + confDB.host + ":" + confDB.port + "/" + confD
 
     # SOCKET STREAM
     socket_message io, db
-    server.listen 8089, ->
+    server.listen 8089, '::', ->
         console.log 'Application listen on port ' , PORT

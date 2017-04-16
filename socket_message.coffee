@@ -36,6 +36,7 @@ Socket = (io, db) ->
 
         # Login User
         socket.on 'login', (data) ->
+            console.log data
             UserModel.findOne {_id : data.username, password : data.password}, (err, user) ->
                 if err
                     throw err
