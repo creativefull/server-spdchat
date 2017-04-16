@@ -69,13 +69,14 @@ Socket = (io, db) ->
                         .toArray (err, hasil) ->
                             if (err)
                                 throw err
-                            io.emit 'listChat', hasil
+                            io.emit 'listChat', {author : data._id , data : hasil}
                 else 
                     io.emit 'listChat', []
 
 
         # Send Direct Message
         socket.on 'directMsg', (data) -> 
+            console.log data
             msg = {
                 receiver : data.receiver,
                 sender : data.sender,
@@ -89,9 +90,15 @@ Socket = (io, db) ->
                 query1 = {
                     _id : data.sender
                 }
-                UserModel.update query1, { $push : { chat : data.receiver} }, (err, rows) ->
-                    UserModel.update {_id : data.receiver}, { $set : { messages : data.msg}}, ->
-                        io.emit 'directMsg', {status : 200, data : msg}
+                UserModel.update {_id : data.receiver}, { $set : { messages : data.msg}}, ->
+                    UserModel.findOne {_id : data.sender}, (err, rowCek) ->
+                        if (rowCek != null)
+                            cek = rowCek.chat.indexOf(data.receiver)
+                            if (cek == -1)
+                                UserModel.update query1, { $push : { chat : data.receiver} }, (err, rows) ->
+                                    io.emit 'directMsg', {status : 200, data : msg}
+                            else
+                                io.emit 'directMsg', {status : 200, data : msg}
         # Get Direct Message
         socket.on 'getDirectMsg', (data) ->
             condition = {
@@ -121,7 +128,7 @@ Socket = (io, db) ->
                 .toArray (err, results) ->
                     if (err)
                         throw err
-                    io.emit 'listContact', results
+                    io.emit 'listContact', {author : data._id, data : results}
         
         # Get List Chat Broadcast
         socket.on 'listBroad', (data) ->
@@ -160,11 +167,11 @@ Socket = (io, db) ->
             }
             BroadMsgModel.insert query1, (err , docs) ->
                 arr_msg = []
-                for i in [0 .. data.receiver.length]
+                for i in data.receiver by -1
                     arr_msg.push({
-                        receiver : data.receiver[i],
+                        receiver : i,
                         sender : data.sender,
-                        author : [data.receiver[i], data.sender],
+                        author : [i, data.sender],
                         msg : data.msg,
                         time : new Date()
                     })
