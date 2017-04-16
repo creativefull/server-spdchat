@@ -63,7 +63,7 @@ Socket = (io, db) ->
                 if (results != null)
                     query2 = {
                         _id : {
-                            $in : results.chat
+                            $in : if results.chat then results.chat else []
                         }
                     }
                     UserModel.find query2
