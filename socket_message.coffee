@@ -4,6 +4,7 @@ Socket = (io, db) ->
     MsgModel = db.collection 'msg'
     BroadModel = db.collection 'broadcast'
     BroadMsgModel = db.collection 'broadMsg'
+    LastMsg = db.collection 'lastMsg'
 
     io.on 'connection', (socket) ->
         console.log 'new client connected', socket.id
@@ -54,24 +55,37 @@ Socket = (io, db) ->
         # Get List Chat
         socket.on 'listChat', (data) ->
             query1 = {
-                _id : data._id
+                author : {
+                    $in : [data._id]
+                }
             }
-            UserModel.findOne query1, (err, results) ->
-                if (err)
-                    throw err
-                if (results != null)
-                    query2 = {
-                        _id : {
-                            $in : if results.chat then results.chat else []
-                        }
-                    }
-                    UserModel.find query2
-                        .toArray (err, hasil) ->
-                            if (err)
-                                throw err
-                            io.emit 'listChat', {author : data._id , data : hasil}
-                else 
-                    io.emit 'listChat', []
+            # console.log query1
+            LastMsg.find query1
+                .sort {time : -1}
+                .toArray (err, results) ->
+                    if (err)
+                        throw err
+                    if results != null
+                        results.forEach (d) ->
+                            d.message = d.msg;
+                            d.name = if d.sender == data._id then d.receiver else d.sender;
+                        io.emit 'listChat', {author : data._id , data : results}                   
+            # UserModel.findOne query1, (err, results) ->
+            #     if (err)
+            #         throw err
+            #     if (results != null)
+            #         query2 = {
+            #             _id : {
+            #                 $in : if results.chat then results.chat else []
+            #             }
+            #         }
+            #         UserModel.find query2
+            #             .toArray (err, hasil) ->
+            #                 if (err)
+            #                     throw err
+            #                 io.emit 'listChat', {author : data._id , data : hasil}
+            #     else 
+            #         io.emit 'listChat', []
 
 
         # Send Direct Message
@@ -89,15 +103,27 @@ Socket = (io, db) ->
                 query1 = {
                     _id : data.sender
                 }
-                UserModel.update {_id : data.receiver}, { $set : { messages : data.msg}}, ->
-                    UserModel.findOne {_id : data.sender}, (err, rowCek) ->
-                        if (rowCek != null)
-                            cek = rowCek.chat.indexOf(data.receiver)
-                            if (cek == -1)
-                                UserModel.update query1, { $push : { chat : data.receiver} }, (err, rows) ->
-                                    io.emit 'directMsg', {status : 200, data : msg}
-                            else
-                                io.emit 'directMsg', {status : 200, data : msg}
+                lastm = {
+                    author : [data.receiver, data.sender],
+                    msg : data.msg,
+                    sender : data.sender,
+                    receiver : data.receiver,
+                    time : new Date()
+                }
+                queryLastMsg = {
+                    $or : [{
+                        author : [data.receiver, data.sender]
+                    }, {
+                        author : [data.sender, data.receiver]
+                    }]
+                }
+                LastMsg.findOne queryLastMsg, (err, result) ->
+                    if (result)
+                        LastMsg.update queryLastMsg, {$set : {msg : data.msg, sender : data.sender, receiver : data.receiver, time : new Date()}}, ->
+                            io.emit 'directMsg', {status : 200, data : msg}
+                    else
+                        LastMsg.insert lastm, (err, result) ->
+                            io.emit 'directMsg', {status : 200, data : msg}
         # Get Direct Message
         socket.on 'getDirectMsg', (data) ->
             condition = {
