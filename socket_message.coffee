@@ -42,7 +42,6 @@ Socket = (io, db) ->
 
         # Login User
         socket.on 'login', (data) ->
-            console.log data
             UserModel.findOne {_id : data.username, password : data.password}, (err, user) ->
                 if err
                     throw err
@@ -76,8 +75,7 @@ Socket = (io, db) ->
 
 
         # Send Direct Message
-        socket.on 'directMsg', (data) -> 
-            console.log data
+        socket.on 'directMsg', (data) ->
             msg = {
                 receiver : data.receiver,
                 sender : data.sender,
@@ -155,26 +153,45 @@ Socket = (io, db) ->
             BroadModel.insert query, (err, rows) ->
                 if err
                     throw err
+                console.log data
                 io.emit 'createBroadcast', {status : 200 , _id : id}
 
-        # Send Broadcst Messages
+        # Get Broadcast Message
+        socket.on 'getBroadMsg', (data) ->
+            query = {
+                id : data.id,
+                sender : data._id
+            }
+            BroadMsgModel.find query
+                .sort({time : -1})
+                .toArray (err, results) ->
+                    if (err)
+                        throw err
+                    console.log data
+                    io.emit 'getBroadMsg', {sender : data._id , _id : data.id , data : results}
+
+        # Send Broadcast Messages
         socket.on 'broadMsg', (data) ->
             console.log data
             query1 = {
                 id : data._id,
                 sender : data.sender,
                 msg : data.msg,
-                receiver : data.receiver
+                receiver : data.receiver,
+                time : new Date()
             }
-            BroadMsgModel.insert query1, (err , docs) ->
-                arr_msg = []
-                for i in data.receiver by -1
-                    arr_msg.push({
-                        receiver : i,
-                        sender : data.sender,
-                        author : [i, data.sender],
-                        msg : data.msg,
-                        time : new Date()
-                    })
-                console.log arr_msg
+            BroadModel.update {_id : data._id}, { $set : { messages : data.msg}}, ->
+                BroadMsgModel.insert query1, (err , docs) ->
+                    arr_msg = []
+                    for i in data.receiver by -1
+                        msg = {
+                            receiver : i,
+                            sender : data.sender,
+                            author : [i, data.sender],
+                            msg : data.msg,
+                            time : new Date()
+                        }
+                        console.log msg
+                        io.emit 'directMsg', {status : 200 , data : msg}
+                        MsgModel.insert msg, (err, results) ->
 module.exports = Socket;
