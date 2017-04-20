@@ -37,6 +37,7 @@ Socket = (io, db) ->
                         name : data.name,
                         email : data.email,
                         password : data.password,
+                        alamat : data.alamat
                     }, (err, result) ->
                         if err
                             throw err;
