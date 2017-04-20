@@ -5,6 +5,7 @@ Socket = (io, db) ->
     BroadModel = db.collection 'broadcast'
     BroadMsgModel = db.collection 'broadMsg'
     LastMsg = db.collection 'lastMsg'
+    LastBroad = db.collection 'lastBroad'
 
     io.on 'connection', (socket) ->
         console.log 'new client connected', socket.id
@@ -69,23 +70,7 @@ Socket = (io, db) ->
                         results.forEach (d) ->
                             d.message = d.msg;
                             d.name = if d.sender == data._id then d.receiver else d.sender;
-                        io.emit 'listChat', {author : data._id , data : results}                   
-            # UserModel.findOne query1, (err, results) ->
-            #     if (err)
-            #         throw err
-            #     if (results != null)
-            #         query2 = {
-            #             _id : {
-            #                 $in : if results.chat then results.chat else []
-            #             }
-            #         }
-            #         UserModel.find query2
-            #             .toArray (err, hasil) ->
-            #                 if (err)
-            #                     throw err
-            #                 io.emit 'listChat', {author : data._id , data : hasil}
-            #     else 
-            #         io.emit 'listChat', []
+                        io.emit 'listChat', {author : data._id , data : results}
 
 
         # Send Direct Message
@@ -160,6 +145,7 @@ Socket = (io, db) ->
             query = {
                 author : data._id
             }
+            console.log(query)
             BroadModel.find query
                 .sort({time : -1})
                 .toArray (err, results) ->
@@ -174,12 +160,14 @@ Socket = (io, db) ->
                 _id : id,
                 author : data.author,
                 receiver : data.receiver,
+                type : data.type,
                 time : new Date()
             }
             BroadModel.insert query, (err, rows) ->
                 if err
                     throw err
-                console.log data
+                # console.log data
+                io.emit 'new rescue', query
                 io.emit 'createBroadcast', {status : 200 , _id : id}
 
         # Get Broadcast Message
