@@ -209,4 +209,13 @@ Socket = (io, db) ->
                         console.log msg
                         io.emit 'directMsg', {status : 200 , data : msg}
                         MsgModel.insert msg, (err, results) ->
+
+        # On Edit Profile
+        socket.on 'editProfile', (data) ->
+            id = data._id
+            delete data._id
+            UserModel.update {_id : id}, {$set : data}, (err, users) ->
+                # console.error err, users
+                data._id = id
+                socket.emit 'editProfile', {status: 200, data : data}
 module.exports = Socket;
